@@ -1,0 +1,125 @@
+# Default values for crowdsec-linux-firewall-bouncer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: ghcr.io/shgew/cs-firewall-bouncer-docker
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext:
+  privileged: true  # Required to allow the bouncer to manipulate iptables rules on the host
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+env:
+    # Depending on your config you cannot resolve service names from your cluster nodes
+    # You can make sure to have a DNS name that is mapped to the service IP (CNAME to service dns name also won't work)
+    # That can be achieved by using an operator like external-dns.
+  - name: CROWDSEC_LAPI_URL
+    value: http://<changeme>:8080
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+
+# Additional volumes on the output Deployment definition.
+volumes:
+  - hostPath:
+      path: /run/xtables.lock
+      type: ""
+    name: xtables
+  - hostPath:
+      path: /var/lib/crowdsec-bouncer
+      type: ""
+    name: cache
+  - configMap:
+      defaultMode: 420
+      name: crowdsec-firewall-bouncer
+    name: cfg
+
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+  - mountPath: /run/xtables.lock
+    name: xtables
+  - mountPath: /var/lib/crowdsec-bouncer
+    name: cache
+  - mountPath: /config/
+    name: cfg
+
+bouncerConfig:
+  # This is the configuration for the bouncer, it will be mounted as a configmap and can be used to override the default configuration of the bouncer.
+  # For more information on the configuration of the bouncer, check the official documentation: https://doc.crowdsec.net/docs/bouncers/cs-firewall-bouncer/configuration/
+  mode: iptables
+  update_frequency: 10s
+  # log_mode: stdout
+  # log_dir: /var/log/
+  # log_level: info
+  # log_compression: true
+  # log_max_size: 100
+  # log_max_backups: 3
+  # log_max_age: 30
+  # api_url: http://<changeme>:8080
+  # api_key: <changeme>
+  # ## TLS Authentication
+  # # cert_path: /etc/crowdsec/tls/cert.pem
+  # # key_path: /etc/crowdsec/tls/key.pem
+  # # ca_cert_path: /etc/crowdsec/tls/ca.crt
+  # insecure_skip_verify: false
+  # disable_ipv6: false
+  # deny_action: DROP
+  # deny_log: false
+  # supported_decisions_types:
+  #   - ban
+  # #to change log prefix
+  # #deny_log_prefix: "crowdsec: "
+  # #to change the blacklists name
+  # blacklists_ipv4: crowdsec-blacklists
+  # blacklists_ipv6: crowdsec6-blacklists
+  # #type of ipset to use
+  # ipset_type: nethash
+  # #if present, insert rule in those chains
+  # iptables_chains:
+  #   - INPUT
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
